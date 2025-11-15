@@ -1,0 +1,14 @@
+{
+    "DL01AB1234": {
+        "challanCount": 0,
+        "message": "No pending challans found for DL01AB1234."
+    },
+    "UP16AB1234": {
+        "challanCount": 2,
+        "message": "Found 2 pending challans for UP16CD5673: Red light violation (₹1000)."
+    },
+    "MH02EF9876": {
+        "challanCount": 1,
+        "message": "Found 1 pending challan for MH02EF9876: Overspeeding (₹2000)."
+    }
+}

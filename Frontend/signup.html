@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RideShare - Join Us</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style> 
+        body { font-family: 'Poppins', sans-serif; } 
+        .validation-item.valid { color: #16a34a; } /* green-600 */
+        .validation-item.invalid { color: #dc2626; } /* red-600 */
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- UPDATED: Using the exact illustration you provided -->
+        <div class="hidden lg:block w-1/2 bg-cover bg-center" style="background-image: url('assets/images/image_5e4221.jpg');">
+            <div class="flex items-center justify-center h-full bg-blue-900 bg-opacity-20">
+                <div class="text-white text-center p-12" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">
+                    <h1 class="text-4xl font-bold mb-4">Start Your Journey With Us</h1>
+                    <p class="text-lg">Connect with travelers, save on costs, and make your commute better.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+            <div class="w-full max-w-md">
+                
+                <!-- Sign Up Form (Initial View) -->
+                <form id="signupForm" class="bg-white p-8 rounded-2xl shadow-lg">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="material-icons text-3xl text-sky-500">directions_car</span>
+                        <h2 class="text-3xl font-bold text-gray-800">Create an Account</h2>
+                    </div>
+                    <div id="signupError" class="hidden my-4 p-3 bg-red-100 text-red-700 rounded-lg"></div>
+                    <div class="space-y-4">
+                        <input type="text" name="username" placeholder="Username" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="email" name="email" placeholder="Email Address" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        
+                        <div>
+                            <label for="phone_number" class="font-medium text-gray-700 text-sm">Phone Number</label>
+                             <div class="flex items-center gap-2 mt-1">
+                                <input type="tel" id="phone_number" name="phone_number" placeholder="10-digit number" required pattern="[6-9][0-9]{9}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="font-medium text-gray-700">Gender:</label>
+                            <div class="flex items-center gap-6 mt-2 text-gray-600">
+                                <label><input type="radio" name="gender" value="female" class="mr-2 accent-sky-500" required> Female</label>
+                                <label><input type="radio" name="gender" value="male" class="mr-2 accent-sky-500"> Male</label>
+                                <label><input type="radio" name="gender" value="other" class="mr-2 accent-sky-500"> Other</label>
+                            </div>
+                        </div>
+                        <div>
+                            <input type="password" name="password" id="password" placeholder="Password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <div id="password-validation" class="text-xs mt-2 space-y-1">
+                                <p id="length-check" class="validation-item invalid flex items-center"><span class="material-icons text-sm mr-1">cancel</span> At least 6 characters</p>
+                                <p id="case-check" class="validation-item invalid flex items-center"><span class="material-icons text-sm mr-1">cancel</span> An uppercase & lowercase letter</p>
+                                <p id="number-check" class="validation-item invalid flex items-center"><span class="material-icons text-sm mr-1">cancel</span> At least one number</p>
+                                <p id="special-check" class="validation-item invalid flex items-center"><span class="material-icons text-sm mr-1">cancel</span> At least one special character (@$!%*?&)</p>
+                            </div>
+                        </div>
+                        <input type="password" id="confirmPassword" placeholder="Confirm Password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <button type="submit" class="w-full mt-6 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition-colors">Sign Up</button>
+                    <p class="text-center text-gray-600 mt-6">Already have an account? <button type="button" onclick="showLogin()" class="font-semibold text-sky-500 hover:underline">Log In</button></p>
+                </form>
+
+                <!-- OTP Verification Form (Hidden) -->
+                <form id="otpForm" class="hidden bg-white p-8 rounded-2xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800">Verify Your Email</h2>
+                    <p class="text-gray-600 my-4">A 6-digit code has been sent to <b id="otp-email-display">your email</b>. Please enter it below.</p>
+                    <div id="otpError" class="hidden my-4 p-3 bg-red-100 text-red-700 rounded-lg"></div>
+                    <input type="text" name="otp" placeholder="Enter OTP" required maxlength="6" class="w-full text-center tracking-[1em] font-bold text-2xl px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <button type="submit" class="w-full mt-6 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition-colors">Verify Account</button>
+                    <p class="text-center text-gray-600 mt-4"><button type="button" class="font-semibold text-sm text-sky-500 hover:underline">Resend Code</button></p>
+                </form>
+
+                <!-- Login Form (Hidden) -->
+                <form id="loginForm" class="hidden bg-white p-8 rounded-2xl shadow-lg">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="material-icons text-3xl text-sky-500">directions_car</span>
+                        <h2 class="text-3xl font-bold text-gray-800">Welcome Back</h2>
+                    </div>
+                    <div id="loginError" class="hidden my-4 p-3 bg-red-100 text-red-700 rounded-lg"></div>
+                    <div class="space-y-4">
+                        <input type="email" name="email" placeholder="Email Address" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <button type="submit" class="w-full mt-6 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition-colors">Log In</button>
+                    <p class="text-center text-gray-600 mt-6">Don't have an account? <button type="button" onclick="showSignup()" class="font-semibold text-sky-500 hover:underline">Sign Up</button></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const signupForm = document.getElementById('signupForm');
+    const loginForm = document.getElementById('loginForm');
+    const otpForm = document.getElementById('otpForm');
+    const signupErrorDiv = document.getElementById('signupError');
+    const loginErrorDiv = document.getElementById('loginError');
+    const otpErrorDiv = document.getElementById('otpError');
+    const passwordInput = document.getElementById('password');
+    const lengthCheck = document.getElementById('length-check');
+    const caseCheck = document.getElementById('case-check');
+    const numberCheck = document.getElementById('number-check');
+    const specialCheck = document.getElementById('special-check');
+    
+    let userEmailForOtp = '';
+
+    function showLogin() { signupForm.classList.add('hidden'); otpForm.classList.add('hidden'); loginForm.classList.remove('hidden'); }
+    function showSignup() { loginForm.classList.add('hidden'); otpForm.classList.add('hidden'); signupForm.classList.remove('hidden'); }
+    function showOtpForm() { signupForm.classList.add('hidden'); loginForm.classList.add('hidden'); otpForm.classList.remove('hidden'); }
+
+    passwordInput.addEventListener('input', () => {
+        const password = passwordInput.value;
+        const validate = (element, condition) => {
+            const icon = element.querySelector('.material-icons');
+            if (condition) { element.classList.replace('invalid', 'valid'); icon.textContent = 'check_circle'; } 
+            else { element.classList.replace('valid', 'invalid'); icon.textContent = 'cancel'; }
+        };
+        validate(lengthCheck, password.length >= 6);
+        validate(caseCheck, /[a-z]/.test(password) && /[A-Z]/.test(password));
+        validate(numberCheck, /\d/.test(password));
+        validate(specialCheck, /[@$!%*?&]/.test(password));
+    });
+
+    signupForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        signupErrorDiv.classList.add('hidden');
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        if (passwordInput.value !== confirmPassword) {
+            signupErrorDiv.textContent = 'Passwords do not match!';
+            signupErrorDiv.classList.remove('hidden');
+            return;
+        }
+
+        const data = Object.fromEntries(new FormData(signupForm).entries());
+        userEmailForOtp = data.email;
+
+        try {
+            const response = await fetch('http://localhost:3001/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            document.getElementById('otp-email-display').textContent = userEmailForOtp;
+            showOtpForm();
+        } catch (error) {
+            signupErrorDiv.textContent = error.message || 'Signup failed.';
+            signupErrorDiv.classList.remove('hidden');
+        }
+    });
+
+    otpForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        otpErrorDiv.classList.add('hidden');
+        const otp = e.target.elements.otp.value;
+        try {
+            const response = await fetch('http://localhost:3001/api/auth/verify-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmailForOtp, otp: otp })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            alert('Verification successful! Please log in to continue.');
+            showLogin();
+        } catch (error) {
+            otpErrorDiv.textContent = error.message || 'Verification failed.';
+            otpErrorDiv.classList.remove('hidden');
+        }
+    });
+
+    loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        loginErrorDiv.classList.add('hidden');
+        const data = Object.fromEntries(new FormData(loginForm).entries());
+        try {
+            const response = await fetch('http://localhost:3001/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            localStorage.setItem('authToken', result.token);
+            window.location.href = '/frontend/dashboard.html';
+        } catch (error) {
+            loginErrorDiv.textContent = error.message || 'Login failed.';
+            loginErrorDiv.classList.remove('hidden');
+        }
+    });
+</script>
+</body>
+</html>
+

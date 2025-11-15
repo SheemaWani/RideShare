@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Available Rides - RideShare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style> 
+        body { font-family: 'Poppins', sans-serif; } 
+        .toggle-checkbox:checked + .toggle-label { background-color: #ec4899; } /* Pink for female-only */
+        .toggle-checkbox:checked { border-color: #ec4899; }
+        #confirmation-modal.hidden, #challan-modal.hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50">
+  
+    <header class="bg-white shadow-sm sticky top-0 z-20">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="/frontend/index.html" class="flex items-center gap-2 text-xl font-bold text-gray-800">
+                <span class="material-icons text-3xl text-sky-500">directions_car</span>
+                <span>RideShare</span>
+            </a>
+            <a href="/frontend/dashboard.html" class="font-medium text-gray-600 hover:text-sky-500 transition-colors">Go to Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Available Rides</h1>
+            <p id="search-details" class="text-gray-600">Loading ride information...</p>
+        </div>
+        
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-6 sticky top-[70px] z-10 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="relative w-full sm:w-auto flex-grow">
+                <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                <input type="search" id="search-input" placeholder="Filter by city..." class="w-full pl-10 pr-4 py-3 text-gray-800 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <label for="female-only-toggle" class="text-gray-700 font-medium flex items-center gap-2 cursor-pointer">
+                <div class="relative inline-block w-14 mr-2 align-middle select-none">
+                    <input type="checkbox" id="female-only-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                    <label for="female-only-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer"></label>
+                </div>
+                <span class="material-icons text-pink-500">female</span>
+                <span class="hidden sm:inline">Female-only</span>
+            </label>
+        </div>
+        
+        <div id="rides-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <p id="loading-message" class="text-center text-gray-500 col-span-full">Loading...</p>
+        </div>
+    </main>
+
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm mx-4">
+            <h3 class="text-lg font-bold mb-4">Confirm Your Booking</h3>
+            <p id="modal-text" class="text-gray-600 mb-6">Are you sure you want to book this ride?</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-booking-btn" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">Cancel</button>
+                <button id="confirm-booking-btn" class="px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challan Status Modal -->
+    <div id="challan-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm mx-auto">
+            <h3 class="text-lg font-bold mb-4">Vehicle Status</h3>
+            <div id="challan-modal-content" class="text-gray-600 mb-6"></div>
+            <button id="close-challan-modal" class="px-6 py-2 bg-sky-500 text-white rounded-lg">Close</button>
+        </div>
+    </div>
+
+<script>
+    const backendUrl = 'http://localhost:3001';
+    let masterRideList = [];
+    let rideToBook = null;
+    let currentUser = null;
+    let bookedRideIds = new Set();
+
+    const ridesList = document.getElementById('rides-list');
+    const loadingMessage = document.getElementById('loading-message');
+    const searchDetails = document.getElementById('search-details');
+    const femaleOnlyToggle = document.getElementById('female-only-toggle');
+    const searchInput = document.getElementById('search-input');
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const cancelBookingBtn = document.getElementById('cancel-booking-btn');
+    const confirmBookingBtn = document.getElementById('confirm-booking-btn');
+    const modalText = document.getElementById('modal-text');
+    const challanModal = document.getElementById('challan-modal');
+    const challanModalContent = document.getElementById('challan-modal-content');
+    const closeChallanModal = document.getElementById('close-challan-modal');
+
+    async function initializePage() {
+        loadingMessage.classList.remove('hidden');
+        ridesList.innerHTML = ''; 
+
+        const params = new URLSearchParams(window.location.search);
+        const origin = params.get('origin');
+        const destination = params.get('destination');
+        const authToken = localStorage.getItem('authToken');
+
+        try {
+            const [ridesResponse, profileResponse, bookedRidesResponse] = await Promise.all([
+                fetch(`${backendUrl}/api/rides/search`),
+                authToken ? fetch(`${backendUrl}/api/user/profile`, { headers: { 'Authorization': `Bearer ${authToken}` } }) : Promise.resolve(null),
+                authToken ? fetch(`${backendUrl}/api/rides/my-booked`, { headers: { 'Authorization': `Bearer ${authToken}` } }) : Promise.resolve(null),
+            ]);
+
+            if (!ridesResponse.ok) throw new Error('Failed to fetch rides.');
+            masterRideList = await ridesResponse.json();
+            
+            if (profileResponse && profileResponse.ok) currentUser = await profileResponse.json();
+            if (bookedRidesResponse && bookedRidesResponse.ok) {
+                const bookedRides = await bookedRidesResponse.json();
+                bookedRideIds = new Set(bookedRides.map(b => b.ride_id));
+            }
+            
+            loadingMessage.classList.add('hidden');
+
+            if (origin && destination) {
+                searchInput.value = `${origin} ${destination}`;
+                searchDetails.textContent = `Showing rides from ${origin} to ${destination}.`;
+            } else {
+                searchDetails.textContent = 'Showing all upcoming rides.';
+            }
+
+            applyFilters(); 
+
+        } catch (error) {
+            loadingMessage.classList.add('hidden');
+            ridesList.innerHTML = `<p class="text-red-500 text-center">${error.message}</p>`;
+        }
+    }
+
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const searchTerms = searchTerm.split(/\s+/).filter(Boolean);
+        const isFemaleOnly = femaleOnlyToggle.checked;
+        
+        let filteredRides = masterRideList;
+
+        if (searchTerms.length > 0) {
+            filteredRides = filteredRides.filter(ride => {
+                const rideOrigin = ride.origin.toLowerCase();
+                const rideDestination = ride.destination.toLowerCase();
+                return searchTerms.every(term => 
+                    rideOrigin.includes(term) || rideDestination.includes(term)
+                );
+            });
+        }
+
+        if (isFemaleOnly) {
+            filteredRides = filteredRides.filter(ride => ride.is_female_only);
+        }
+
+        if (!searchTerm && !(new URLSearchParams(window.location.search).has('origin'))) {
+             searchDetails.textContent = 'Showing all upcoming rides.';
+        } else if (searchTerm) {
+            searchDetails.textContent = `Filtering for "${searchInput.value}"...`;
+        }
+
+        renderRides(filteredRides);
+    }
+    
+    document.addEventListener('DOMContentLoaded', initializePage);
+    searchInput.addEventListener('input', applyFilters);
+    femaleOnlyToggle.addEventListener('change', applyFilters);
+
+    ridesList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('book-now-btn')) {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert("Please log in to book a ride.");
+                window.location.href = '/frontend/signup.html';
+                return;
+            }
+            const rideId = e.target.dataset.rideId;
+            rideToBook = masterRideList.find(r => r.ride_id == rideId);
+            if (rideToBook) {
+                modalText.textContent = `Confirm booking from ${rideToBook.origin.split(',')[0]} to ${rideToBook.destination.split(',')[0]} for ₹${rideToBook.price_per_seat}?`;
+                confirmationModal.classList.remove('hidden');
+            }
+        } else if (e.target.classList.contains('challan-status-btn')) {
+            const rideId = e.target.dataset.rideId;
+            const ride = masterRideList.find(r => r.ride_id == rideId);
+            if (ride && ride.challanStatus) {
+                const { status, message } = ride.challanStatus;
+                const icon = status === 'warning' ? 'warning' : 'check_circle';
+                const color = status === 'warning' ? 'text-red-600' : 'text-green-600';
+                challanModalContent.innerHTML = `<div class="flex justify-center items-center gap-2 ${color}"><span class="material-icons">${icon}</span><p class="font-semibold">${message}</p></div>`;
+                challanModal.classList.remove('hidden');
+            }
+        }
+    });
+
+    cancelBookingBtn.addEventListener('click', () => {
+        confirmationModal.classList.add('hidden');
+        rideToBook = null;
+    });
+
+    closeChallanModal.addEventListener('click', () => {
+        challanModal.classList.add('hidden');
+    });
+
+    confirmBookingBtn.addEventListener('click', async () => {
+        if (!rideToBook) return;
+        try {
+            const authToken = localStorage.getItem('authToken');
+            const response = await fetch(`${backendUrl}/api/bookings/book`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ ride_id: rideToBook.ride_id })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            alert(result.message);
+            window.location.href = '/frontend/dashboard.html';
+        } catch (error) {
+            alert(`Booking failed: ${error.message}`);
+        } finally {
+            confirmationModal.classList.add('hidden');
+            rideToBook = null;
+        }
+    });
+
+    function renderRides(rides) {
+        if (rides.length === 0) {
+            ridesList.innerHTML = '<div class="col-span-full text-center text-gray-500 bg-white p-8 rounded-lg shadow-sm"><h3>No rides found.</h3><p>Try adjusting your search filters or check back later!</p></div>';
+            return;
+        }
+        
+        ridesList.innerHTML = rides.map(ride => {
+            const departureTime = new Date(ride.departure_time);
+            const departureDateString = departureTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const departureTimeString = departureTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
+            
+            let buttonHtml;
+            if (currentUser && ride.driver_id === currentUser.user_id) {
+                buttonHtml = `<button disabled class="bg-gray-300 text-gray-500 font-bold py-2 px-4 rounded-lg text-sm cursor-not-allowed">Your Ride</button>`;
+            } else if (bookedRideIds.has(ride.ride_id)) {
+                buttonHtml = `<button disabled class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm cursor-not-allowed">Booked</button>`;
+            } else {
+                buttonHtml = `<button class="book-now-btn bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm" data-ride-id="${ride.ride_id}">Book Now</button>`;
+            }
+
+            return `
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+                <div class="p-5 flex flex-col h-full">
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-medium text-gray-500">${departureDateString}</p>
+                        <p class="text-xl font-bold text-sky-600 flex-shrink-0">₹${ride.price_per_seat}</p>
+                    </div>
+                    <div class="my-3">
+                        <div class="flex items-center justify-between">
+                            <p class="w-2/5 font-bold text-lg text-gray-800 truncate text-left">${ride.origin.split(',')[0]}</p>
+                            <div class="w-1/5 flex justify-center"><span class="material-icons text-sky-500">arrow_forward</span></div>
+                            <p class="w-2/5 font-bold text-lg text-gray-800 truncate text-right">${ride.destination.split(',')[0]}</p>
+                        </div>
+                        <div class="flex items-center justify-start text-sm text-gray-500">
+                             <span>${departureTimeString}</span>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-gray-200 flex justify-between items-center">
+                        <div class="flex items-center">
+                            <img src="${ride.profile_picture_url ? backendUrl + ride.profile_picture_url : 'https://placehold.co/40x40/e2e8f0/64748b?text=U'}" alt="${ride.driver_name}" class="w-9 h-9 rounded-full object-cover">
+                            <div class="ml-2">
+                                <p class="text-sm font-semibold text-gray-900 leading-tight">${ride.driver_name}</p>
+                                <p class="text-xs text-gray-500 leading-tight">${ride.vehicle_model || 'Car'}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="challan-status-btn text-xs font-bold py-1 px-2 rounded-full ${ride.challanStatus.status === 'warning' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}" data-ride-id="${ride.ride_id}">
+                                Vehicle Status
+                            </button>
+                            ${ride.is_female_only ? `<div class="flex items-center text-pink-500" title="Female-only ride"><span class="material-icons text-lg">female</span></div>` : ''}
+                            ${buttonHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `
+        }).join('');
+    }
+</script>
+</body>
+</html>
+

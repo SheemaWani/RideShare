@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Profile - RideShare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style> 
+        body { font-family: 'Poppins', sans-serif; } 
+        #phone-otp-modal.hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="/frontend/index.html" class="flex items-center gap-2 text-xl font-bold text-gray-800">
+                <span class="material-icons text-3xl text-sky-500">directions_car</span>
+                <span>RideShare</span>
+            </a>
+            <a href="/frontend/dashboard.html" class="font-medium text-gray-600 hover:text-sky-500 transition-colors">Back to Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-8 flex justify-center">
+        <div class="w-full max-w-2xl bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Your Profile</h1>
+            
+            <div class="flex flex-col items-center mb-8">
+                <img id="profile-picture-preview" src="https://placehold.co/128x128/e2e8f0/64748b?text=User" alt="Profile Picture" class="w-32 h-32 rounded-full object-cover border-4 border-gray-200">
+                <input type="file" id="picture-upload-input" class="hidden" accept="image/*">
+                <button id="upload-picture-btn" class="mt-4 text-sm font-semibold text-sky-600 hover:underline">Change Picture</button>
+            </div>
+            
+            <div id="alert-message" class="hidden p-3 mb-4 rounded-lg"></div>
+
+            <form id="profile-form" class="space-y-6">
+                <div>
+                    <label for="username" class="font-medium text-gray-700">Username</label>
+                    <input type="text" id="username" name="username" required class="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div>
+                    <label for="email" class="font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="email" name="email" readonly class="w-full mt-1 px-4 py-3 bg-gray-200 border border-gray-300 rounded-lg cursor-not-allowed">
+                </div>
+                
+                <div>
+                    <label for="phone_number" class="font-medium text-gray-700">Phone Number</label>
+                    <div class="flex items-center gap-2 mt-1">
+                        <input type="tel" id="phone_number" name="phone_number" required pattern="[6-9][0-9]{9}" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button type="button" id="verify-phone-btn" class="px-4 py-3 bg-blue-500 text-white rounded-lg text-sm font-semibold whitespace-nowrap">Verify Phone</button>
+                    </div>
+                    <p id="phone-status" class="text-xs font-medium mt-1"></p>
+                </div>
+
+                <div>
+                    <label class="font-medium text-gray-700">Gender</label>
+                    <div class="flex items-center gap-6 mt-2">
+                        <label class="flex items-center"><input type="radio" name="gender" value="female" class="mr-2 h-4 w-4 accent-sky-500"> Female</label>
+                        <label class="flex items-center"><input type="radio" name="gender" value="male" class="mr-2 h-4 w-4 accent-sky-500"> Male</label>
+                        <label class="flex items-center"><input type="radio" name="gender" value="other" class="mr-2 h-4 w-4 accent-sky-500"> Other</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3.5 rounded-lg transition-colors">Save Changes</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="phone-otp-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm mx-4">
+            <h3 class="text-lg font-bold mb-4">Verify Phone Number</h3>
+            <p class="text-gray-600 mb-4">An OTP has been sent (check your backend console). Please enter it below.</p>
+            <div id="phoneOtpError" class="hidden my-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm"></div>
+            <input type="text" id="phone-otp-input" placeholder="Enter OTP" maxlength="6" class="w-full text-center tracking-[0.5em] font-bold text-xl px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <div class="flex justify-center gap-4 mt-6">
+                <button id="cancel-phone-otp" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">Cancel</button>
+                <button id="submit-phone-otp" class="px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg">Verify</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) { window.location.href = '/frontend/signup.html'; }
+
+    const profilePicturePreview = document.getElementById('profile-picture-preview');
+    const pictureUploadInput = document.getElementById('picture-upload-input');
+    const uploadPictureBtn = document.getElementById('upload-picture-btn');
+    const profileForm = document.getElementById('profile-form');
+    const alertMessage = document.getElementById('alert-message');
+    const verifyPhoneBtn = document.getElementById('verify-phone-btn');
+    const phoneStatus = document.getElementById('phone-status');
+    const phoneOtpModal = document.getElementById('phone-otp-modal');
+    const cancelPhoneOtp = document.getElementById('cancel-phone-otp');
+    const submitPhoneOtp = document.getElementById('submit-phone-otp');
+    const phoneOtpInput = document.getElementById('phone-otp-input');
+    const phoneOtpError = document.getElementById('phoneOtpError');
+    const backendUrl = 'http://localhost:3001';
+
+    async function fetchAPI(url, options = {}) {
+        try {
+            const defaultHeaders = { 'Authorization': `Bearer ${authToken}` };
+            const mergedOptions = { ...options, headers: { ...defaultHeaders, ...options.headers } };
+
+            if (mergedOptions.body && typeof mergedOptions.body === 'object' && !(mergedOptions.body instanceof FormData)) {
+                mergedOptions.headers['Content-Type'] = 'application/json';
+                mergedOptions.body = JSON.stringify(mergedOptions.body);
+            }
+            if (mergedOptions.body instanceof FormData) {
+                delete mergedOptions.headers['Content-Type'];
+            }
+            
+            const response = await fetch(`${backendUrl}${url}`, mergedOptions);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'API request failed');
+            return data;
+        } catch (error) { 
+            console.error(`API Error on ${url}:`, error); 
+            throw error; 
+        }
+    }
+
+    function showAlert(message, isError = false) {
+        alertMessage.textContent = message;
+        alertMessage.className = isError 
+            ? 'p-3 mb-4 rounded-lg bg-red-100 text-red-700' 
+            : 'p-3 mb-4 rounded-lg bg-green-100 text-green-700';
+        alertMessage.classList.remove('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const user = await fetchAPI('/api/user/profile');
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phone_number').value = user.phone_number || '';
+            if (user.gender) {
+                document.querySelector(`input[name="gender"][value="${user.gender}"]`).checked = true;
+            }
+            if (user.profile_picture_url) {
+                profilePicturePreview.src = `${backendUrl}${user.profile_picture_url}`;
+            }
+
+            if (user.is_phone_verified) {
+                phoneStatus.textContent = 'Verified';
+                phoneStatus.className = 'text-xs font-medium mt-1 text-green-600';
+                verifyPhoneBtn.classList.add('hidden');
+                document.getElementById('phone_number').readOnly = true;
+            } else if (user.phone_number) {
+                phoneStatus.textContent = 'Not Verified';
+                phoneStatus.className = 'text-xs font-medium mt-1 text-red-600';
+                verifyPhoneBtn.classList.remove('hidden');
+            } else {
+                 verifyPhoneBtn.classList.remove('hidden');
+            }
+        } catch (error) {
+            showAlert('Could not load your profile data.', true);
+        }
+    });
+
+    uploadPictureBtn.addEventListener('click', () => pictureUploadInput.click());
+
+    pictureUploadInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('profilePicture', file);
+        try {
+            const result = await fetchAPI('/api/user/profile-picture', { method: 'POST', body: formData });
+            const fullImageUrl = `${backendUrl}${result.imageUrl}`;
+            profilePicturePreview.src = fullImageUrl;
+            localStorage.setItem('userProfilePictureUrl', fullImageUrl);
+            showAlert('Profile picture updated!');
+        } catch (error) { showAlert(error.message, true); }
+    });
+
+    profileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const data = Object.fromEntries(new FormData(profileForm));
+        try {
+            await fetchAPI('/api/user/profile', { method: 'PUT', body: data });
+            showAlert('Profile details saved successfully! Please re-verify if you changed your phone number.');
+            // After saving, re-check phone verification status
+             if (data.phone_number) {
+                phoneStatus.textContent = 'Not Verified';
+                phoneStatus.className = 'text-xs font-medium mt-1 text-red-600';
+                verifyPhoneBtn.classList.remove('hidden');
+                document.getElementById('phone_number').readOnly = false;
+            }
+        } catch (error) { showAlert(error.message, true); }
+    });
+
+    verifyPhoneBtn.addEventListener('click', async () => {
+        const phone_number = document.getElementById('phone_number').value;
+        if (!/^[6-9]\d{9}$/.test(phone_number)) {
+            showAlert('Please save a valid 10-digit phone number before verifying.', true);
+            return;
+        }
+        try {
+            await fetchAPI('/api/user/send-phone-otp', {
+                method: 'POST',
+                body: { phone_number }
+            });
+            phoneOtpModal.classList.remove('hidden');
+        } catch (error) { showAlert(error.message, true); }
+    });
+
+    cancelPhoneOtp.addEventListener('click', () => phoneOtpModal.classList.add('hidden'));
+
+    submitPhoneOtp.addEventListener('click', async () => {
+        const otp = phoneOtpInput.value;
+        phoneOtpError.classList.add('hidden');
+        try {
+            await fetchAPI('/api/user/verify-phone-otp', {
+                method: 'POST',
+                body: { otp }
+            });
+            alert('Phone number verified successfully!');
+            phoneOtpModal.classList.add('hidden');
+            phoneStatus.textContent = 'Verified';
+            phoneStatus.className = 'text-xs font-medium mt-1 text-green-600';
+            verifyPhoneBtn.classList.add('hidden');
+            document.getElementById('phone_number').readOnly = true;
+        } catch (error) {
+            phoneOtpError.textContent = error.message;
+            phoneOtpError.classList.remove('hidden');
+        }
+    });
+</script>
+</body>
+</html>
+

@@ -69,41 +69,6 @@ Configured inside:
 
 Backend/config/database.js
 
-📁 Project Structure
-RideShare/
-│
-├── Backend/
-│   ├── config/
-│   │   └── database.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── bookingController.js
-│   │   ├── rideController.js
-│   │   ├── userController.js
-│   │   └── vehicleController.js
-│   ├── middleware/
-│   │   └── authMiddleware.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── bookingRoutes.js
-│   │   ├── rideRoutes.js
-│   │   ├── userRoutes.js
-│   │   └── vehicleRoutes.js
-│   ├── uploads
-│   ├── .env (ignored)
-│   └── server.js
-│
-├── Frontend/
-│   ├── index.html
-│   ├── signup.html
-│   ├── dashboard.html
-│   ├── publish-ride.html
-│   ├── search-results.html
-│   └── profile.html
-│
-├── .gitignore
-└── README.md
-
 🔧 Installation & Setup
 1️⃣ Clone the Repository
 git clone https://github.com/<your-username>/RideShare.git
